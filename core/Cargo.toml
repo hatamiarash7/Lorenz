@@ -1,0 +1,8 @@
+[package]
+name = "lorenz"
+version = "1.0.0"
+authors = ["Arash Hatami <hatamiarash7@gmail.com>"]
+edition = "2020"
+
+[dependencies]
+sodiumoxide = "0.2.2"

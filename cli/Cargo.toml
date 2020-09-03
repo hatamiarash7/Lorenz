@@ -1,0 +1,15 @@
+[package]
+name = "lorenz_cli"
+version = "1.0.0"
+authors = ["Arash Hatami <hatamiarash7@gmail.com>"]
+edition = "2020"
+
+[dependencies]
+lorenz = { path = "../core" }
+rpassword = "3.0.2"
+sodiumoxide = "0.2.2"
+clap = "~2.33"
+
+[dev-dependencies]
+rand = "0.5"
+itertools = "0.9"

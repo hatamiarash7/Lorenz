@@ -1,0 +1,12 @@
+[package]
+name = "adapter"
+version = "1.0.0"
+authors = ["Arash Hatami <hatamiarash7@gmail.com>"]
+edition = "2020"
+
+[lib]
+name = "adapter"
+crate-type = ["staticlib"]
+
+[dependencies]
+lorenz = { path = "../core" }

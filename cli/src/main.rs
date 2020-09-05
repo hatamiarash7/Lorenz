@@ -32,7 +32,7 @@ fn do_it() -> Result<(String, Mode), Box<dyn Error>> {
     let matches = App::new("lorenz")
         .version("v3.0")
         .author("Theron Spiegl")
-        .about("lorenz is a simple file encryption utility. Passwords must be at least 12 characters, and a variety of letters, numbers, and symbols is strongly recommended. Written in Rust using sodiumoxide/libsodium's stream encryption. Copyright © 2020 Theron Spiegl. All rights reserved.")
+        .about("lorenz is a simple file encryption utility. Passwords must be at least 12 characters, and a variety of letters, numbers, and symbols is strongly recommended. Written in Rust using sodiumoxide/libsodium's stream encryption. Copyright © 2020 Arash Hatami. All rights reserved.")
         .arg(Arg::with_name("encrypt")
             .short("e")
             .long("encrypt")

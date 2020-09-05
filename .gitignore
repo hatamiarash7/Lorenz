@@ -125,3 +125,7 @@ StyleCopReport.xml
 *.pidb
 *.svclog
 *.scc
+
+# Lorenz
+
+gui/build-lorenz-*

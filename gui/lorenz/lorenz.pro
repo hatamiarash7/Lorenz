@@ -8,7 +8,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = cloaker
+TARGET = lorenz
 TEMPLATE = app
 
 # The following define makes your compiler emit warnings if you use
@@ -56,8 +56,8 @@ unix: PRE_TARGETDEPS += $$PWD/../../adapter/target/release/libadapter.a
 
 DISTFILES +=
 
-ICON = macCloakerLogo.icns
-RC_ICONS = cloaker.ico
+ICON = maclLorenzLogo.icns
+RC_ICONS = lorenz.ico
 
 win32: LIBS += -L$$PWD/../../adapter/target/release/ -ladapter -lws2_32 -luserenv
 

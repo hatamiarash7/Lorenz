@@ -2,13 +2,13 @@ mod brute_force;
 
 use lorenz::*;
 
+use clap::{App, Arg, ArgGroup};
+use rpassword;
+use sodiumoxide;
 use std::env;
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::process::exit;
-use rpassword;
-use sodiumoxide;
-use clap::{App, Arg, ArgGroup};
 
 const FILE_EXTENSION: &str = ".lorenz";
 
@@ -20,7 +20,7 @@ fn main() {
                 Mode::Decrypt => "decrypted",
             };
             format!("Success! {} has been {}.", output_filename, m)
-        },
+        }
         Err(e) => format!("{}", e),
     };
     println!("{}", msg);
@@ -55,10 +55,18 @@ fn do_it() -> Result<(String, Mode), Box<dyn Error>> {
             .help("Specifies a path or name for the output file. If the path to an existing directory is given, the input filename will be kept with the .lorenz extension added if encrypting or removed (if decrypting). Otherwise the file will be placed and named according to this parameter."))
         .get_matches();
 
-    let mode = if matches.is_present("encrypt") { Mode::Encrypt } else { Mode::Decrypt };
+    let mode = if matches.is_present("encrypt") {
+        Mode::Encrypt
+    } else {
+        Mode::Decrypt
+    };
     let filename = match mode {
-        Mode::Encrypt => matches.value_of("encrypt").ok_or("file to encrypt not given")?,
-        Mode::Decrypt => matches.value_of("decrypt").ok_or("file to decrypt not given")?,
+        Mode::Encrypt => matches
+            .value_of("encrypt")
+            .ok_or("file to encrypt not given")?,
+        Mode::Decrypt => matches
+            .value_of("decrypt")
+            .ok_or("file to decrypt not given")?,
     };
 
     let p = Path::new(filename);
@@ -68,7 +76,9 @@ fn do_it() -> Result<(String, Mode), Box<dyn Error>> {
     }
 
     let output_path = generate_output_path(&mode, filename, matches.value_of("output"))?
-        .to_str().ok_or("could not convert output path to string")?.to_string();
+        .to_str()
+        .ok_or("could not convert output path to string")?
+        .to_string();
     let password = get_password(&mode);
 
     let config = Config::new(&mode, password, &filename, &output_path);
@@ -81,8 +91,10 @@ fn do_it() -> Result<(String, Mode), Box<dyn Error>> {
 fn get_password(mode: &Mode) -> String {
     match mode {
         Mode::Encrypt => {
-            let password = rpassword::prompt_password_stdout("Password (minimum 12 characters, longer is better): ")
-                .expect("could not get password from user");
+            let password = rpassword::prompt_password_stdout(
+                "Password (minimum 12 characters, longer is better): ",
+            )
+            .expect("could not get password from user");
             if password.len() < 12 {
                 println!("Error: password must be at least 12 characters. Exiting.");
                 exit(12);
@@ -94,22 +106,23 @@ fn get_password(mode: &Mode) -> String {
                 exit(1);
             }
             password
-        },
-        Mode::Decrypt => rpassword::prompt_password_stdout("Password: ").expect("could not get password from user"),
+        }
+        Mode::Decrypt => rpassword::prompt_password_stdout("Password: ")
+            .expect("could not get password from user"),
     }
 }
 
 fn generate_output_path(mode: &Mode, input: &str, output: Option<&str>) -> Result<PathBuf, String> {
-    if output.is_some() { 
+    if output.is_some() {
         let p = PathBuf::from(output.unwrap());
-        if p.exists() && p.is_dir() { 
-            generate_default_filename(mode, p, input) 
+        if p.exists() && p.is_dir() {
+            generate_default_filename(mode, p, input)
         } else if p.exists() && p.is_file() {
             Err(format!("Error: file {:?} already exists. Must choose new filename or specify directory to generate default filename.", p))
-        } else { 
+        } else {
             Ok(p)
         }
-    } else { 
+    } else {
         let cwd = env::current_dir().map_err(|e| e.to_string())?;
         generate_default_filename(mode, cwd, input)
     }
@@ -122,14 +135,15 @@ fn generate_default_filename(mode: &Mode, _path: PathBuf, name: &str) -> Result<
             let mut with_ext = name.to_string();
             with_ext.push_str(FILE_EXTENSION);
             with_ext
-        },
+        }
         Mode::Decrypt => {
             if name.ends_with(FILE_EXTENSION) {
                 name[..name.len() - FILE_EXTENSION.len()].to_string()
             } else {
-                prepend("decrypted_", name).ok_or(format!("could not prepend decrypted_ to filename {}", name))?
+                prepend("decrypted_", name)
+                    .ok_or(format!("could not prepend decrypted_ to filename {}", name))?
             }
-        },
+        }
     };
     path.push(f);
     find_filename(path).ok_or("could not generate filename".to_string())
@@ -154,10 +168,7 @@ fn find_filename(_path: PathBuf) -> Option<PathBuf> {
             "" => format!("{} ({})", stem, i),
             _ => format!("{} ({}).{}", stem, i, ext),
         };
-        path = [
-            parent,
-            Path::new(&new_file),
-        ].iter().collect();
+        path = [parent, Path::new(&new_file)].iter().collect();
         i += 1;
     }
     Some(path)
@@ -170,6 +181,8 @@ fn prepend(prefix: &str, p: &str) -> Option<String> {
     path = [
         parent,
         Path::new(&format!("{}{}", prefix, file.to_string_lossy())),
-    ].iter().collect();
+    ]
+    .iter()
+    .collect();
     Some(path.to_string_lossy().to_string())
 }

@@ -1,13 +1,12 @@
 mod os_interface;
 pub use os_interface::*;
 
-use std::{error, fmt};
+use sodiumoxide::crypto::pwhash;
+use sodiumoxide::crypto::secretstream::xchacha20poly1305::{Header, Key};
+use sodiumoxide::crypto::secretstream::{Stream, Tag, ABYTES, HEADERBYTES, KEYBYTES};
 use std::fs::File;
 use std::io::prelude::*;
-use sodiumoxide::crypto::pwhash;
-use sodiumoxide::crypto::secretstream::
-    {Stream, Tag, ABYTES, HEADERBYTES, KEYBYTES};
-use sodiumoxide::crypto::secretstream::xchacha20poly1305::{Header, Key};
+use std::{error, fmt};
 
 const CHUNKSIZE: usize = 4096;
 const SIGNATURE: [u8; 4] = [0xC1, 0x0A, 0x4B, 0xED];
@@ -18,7 +17,11 @@ struct CoreError {
 }
 
 impl CoreError {
-    fn new(msg: &str) -> Self { CoreError{message: msg.to_string()} }
+    fn new(msg: &str) -> Self {
+        CoreError {
+            message: msg.to_string(),
+        }
+    }
 }
 
 impl fmt::Display for CoreError {
@@ -29,25 +32,30 @@ impl fmt::Display for CoreError {
 
 impl error::Error for CoreError {}
 
-
-pub fn encrypt(in_file: &mut File, out_file: &mut File, password: &str) 
-    -> Result<(), Box<dyn error::Error>> {
-
+pub fn encrypt(
+    in_file: &mut File,
+    out_file: &mut File,
+    password: &str,
+) -> Result<(), Box<dyn error::Error>> {
     let mut buf = [0; CHUNKSIZE];
     let mut bytes_left = in_file.metadata()?.len();
-    
     out_file.write(&SIGNATURE)?;
 
     let salt = pwhash::gen_salt();
     out_file.write(&salt.0)?;
 
     let mut key = [0u8; KEYBYTES];
-    pwhash::derive_key(&mut key, password.as_bytes(), &salt,
+    pwhash::derive_key(
+        &mut key,
+        password.as_bytes(),
+        &salt,
         pwhash::OPSLIMIT_INTERACTIVE,
-        pwhash::MEMLIMIT_INTERACTIVE).unwrap();
+        pwhash::MEMLIMIT_INTERACTIVE,
+    )
+    .unwrap();
     let key = Key(key);
-    let (mut stream, header) = Stream::init_push(&key)
-        .map_err(|_| CoreError::new("init_push failed"))?;
+    let (mut stream, header) =
+        Stream::init_push(&key).map_err(|_| CoreError::new("init_push failed"))?;
     out_file.write(&header.0)?;
 
     loop {
@@ -59,11 +67,12 @@ pub fn encrypt(in_file: &mut File, out_file: &mut File, password: &str)
                     _ => Tag::Message,
                 };
                 out_file.write(
-                    &stream.push(&buf[..num_read], None, tag)
-                        .map_err(|_| CoreError::new("Encrypting file failed"))?
+                    &stream
+                        .push(&buf[..num_read], None, tag)
+                        .map_err(|_| CoreError::new("Encrypting file failed"))?,
                 )?;
-                continue
-            },
+                continue;
+            }
             Err(e) => Err(e)?,
             _ => break,
         }
@@ -72,9 +81,11 @@ pub fn encrypt(in_file: &mut File, out_file: &mut File, password: &str)
     Ok(())
 }
 
-pub fn decrypt(in_file: &mut File, out_file: &mut File, password: &str)
-    -> Result<(), Box<dyn error::Error>> {
-
+pub fn decrypt(
+    in_file: &mut File,
+    out_file: &mut File,
+    password: &str,
+) -> Result<(), Box<dyn error::Error>> {
     if !(in_file.metadata()?.len() > (pwhash::SALTBYTES + HEADERBYTES + SIGNATURE.len()) as u64) {
         return Err(CoreError::new("File not big enough to have been encrypted"))?;
     }
@@ -96,24 +107,29 @@ pub fn decrypt(in_file: &mut File, out_file: &mut File, password: &str)
     let header = Header(header);
 
     let mut key = [0u8; KEYBYTES];
-    pwhash::derive_key(&mut key, password.as_bytes(), &salt,
+    pwhash::derive_key(
+        &mut key,
+        password.as_bytes(),
+        &salt,
         pwhash::OPSLIMIT_INTERACTIVE,
-        pwhash::MEMLIMIT_INTERACTIVE)
-        .map_err(|_| CoreError::new("Deriving key failed"))?;
+        pwhash::MEMLIMIT_INTERACTIVE,
+    )
+    .map_err(|_| CoreError::new("Deriving key failed"))?;
     let key = Key(key);
 
     let mut buffer = [0u8; CHUNKSIZE + ABYTES];
-    let mut stream = Stream::init_pull(&header, &key)
-        .map_err(|_| CoreError::new("init_pull failed"))?;
+    let mut stream =
+        Stream::init_pull(&header, &key).map_err(|_| CoreError::new("init_pull failed"))?;
 
     while stream.is_not_finalized() {
         match in_file.read(&mut buffer) {
             Ok(num_read) if num_read > 0 => {
-                let (decrypted, _tag) = stream.pull(&buffer[..num_read], None)
+                let (decrypted, _tag) = stream
+                    .pull(&buffer[..num_read], None)
                     .map_err(|_| CoreError::new("Incorrect password"))?;
                 out_file.write(&decrypted)?;
-                continue
-            },
+                continue;
+            }
             Err(e) => return Err(Box::new(e)),
             _ => return Err(CoreError::new("Decryption error"))?,
         }

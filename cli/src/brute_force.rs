@@ -1,15 +1,13 @@
-
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
     use rand::{thread_rng, RngCore};
     use std::io::Write;
-    use itertools::Itertools;
     use std::time::Instant;
 
     #[test]
     fn brute_force_test() -> Result<(), Box<dyn std::error::Error>> {
-
-        let mut random_data = vec![0; (1<<10) * 100]; // 100KiB
+        let mut random_data = vec![0; (1 << 10) * 100]; // 100KiB
         thread_rng().fill_bytes(&mut random_data);
         let mut temp_file = std::env::temp_dir();
         temp_file.push("rand.txt");
@@ -26,7 +24,11 @@ mod tests {
 
         let mut possible_chars = ('a'..='z').collect::<Vec<char>>();
         possible_chars.append(&mut ('A'..='Z').collect());
-        possible_chars.append(&mut "0123456789!@#$%^&*()-_=+`~,./<>?;':\"[]{}\\|".chars().collect());
+        possible_chars.append(
+            &mut "0123456789!@#$%^&*()-_=+`~,./<>?;':\"[]{}\\|"
+                .chars()
+                .collect(),
+        );
         let mut combiner = possible_chars.iter().combinations_with_replacement(10);
         println!("possible chars: {}", possible_chars.len());
 
@@ -36,18 +38,24 @@ mod tests {
 
         loop {
             let guess_chars = combiner
-                .next() 
-                .ok_or("end of combinations")? 
+                .next()
+                .ok_or("end of combinations")?
                 .iter()
-                .cloned().cloned()
-                .collect::<Vec<char>>(); 
+                .cloned()
+                .cloned()
+                .collect::<Vec<char>>();
             let guess: String = guess_chars.into_iter().collect();
-            let c = lorenz::Config::new(&lorenz::Mode::Decrypt, guess.clone(), &out_file, "./result");
+            let c =
+                lorenz::Config::new(&lorenz::Mode::Decrypt, guess.clone(), &out_file, "./result");
             assert!(lorenz::main_routine(&c).is_err());
 
             attempts += 1;
-            let elapsed = Instant::now().duration_since(start_time.clone()).as_secs_f64();
-            if elapsed == 0. {continue};
+            let elapsed = Instant::now()
+                .duration_since(start_time.clone())
+                .as_secs_f64();
+            if elapsed == 0. {
+                continue;
+            };
             let attempts_per_sec = attempts as f64 / elapsed;
             let num_secs = num_combos / attempts_per_sec;
             let num_years = num_secs / (60. * 60. * 24. * 365.);

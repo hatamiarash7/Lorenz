@@ -2,7 +2,7 @@
 name = "adapter"
 version = "1.0.0"
 authors = ["Arash Hatami <hatamiarash7@gmail.com>"]
-edition = "2020"
+edition = "2018"
 
 [lib]
 name = "adapter"
